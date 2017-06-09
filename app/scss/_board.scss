@@ -1,0 +1,29 @@
+.field {
+  width: 50%;
+  height: 50%;
+  transition: opacity linear .2s;
+}
+
+.top-left {
+  background-color: #b71c1c;
+  border-radius: 100% 0 0 0;
+}
+
+.top-right {
+  background-color: #1565c0;
+  border-radius: 0 100% 0 0;
+}
+
+.bot-left {
+  background-color: #388e3c;
+  border-radius: 0 0 0 100%;
+}
+
+.bot-right {
+  background-color: #fbc02d;
+  border-radius: 0 0 100% 0;
+}
+
+.highlighted {
+  background-color: black;
+}
