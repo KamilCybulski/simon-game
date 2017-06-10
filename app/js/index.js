@@ -10,7 +10,7 @@ CONSTANTS
 
 const GAME_LENGTH = 5;
 const SPEED = 1000;
-const DISPLAY_TIME = 1000
+const DISPLAY_TIME = 500;
 const START_BTN = document.querySelector('.start-btn');
 const STRICT_BTN = document.querySelector('.strict-btn');
 const CIRCLE = document.querySelector('.circle');
@@ -77,7 +77,6 @@ const runner = (gen, game, loop, cb) => {
                   if(cb && typeof cb === 'function') {
                     cb();
                   }
-                  return undefined;
                 }
               })
         }
@@ -174,8 +173,6 @@ START_BTN.addEventListener('click', () => {
     .then(
       () => runner(playersInput, g, true)
     )
-    .then(
-      () => {console.log('Yupieeee')}
-    )
+    .then(()=>{console.log('Yupieeee')})
   })(game);
 });
