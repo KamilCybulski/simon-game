@@ -8,7 +8,7 @@ import s3 from '../sounds/killedkenny.mp3'
 CONSTANTS
 =================================================================*/
 
-const GAME_LENGTH = 5;
+const GAME_LENGTH = 3;
 const SPEED = 1000;
 const DISPLAY_TIME = 500;
 const START_BTN = document.querySelector('.start-btn');
@@ -34,7 +34,6 @@ class Game {
     this.list = [];
     this.turn = 0;
     this.strict = strict;
-    this.won = false;
     this.lost = false;
   };
 }
@@ -48,11 +47,9 @@ FUNCTIONS
  * takes a promise-aware generator as a first param, calls it and 
  * exhausts the recieved iterator.
  * game param is for passing a game object
- * loop param is a boolean indicating if runner should restart if any
- * of the promises in the chain rejects
- * cb is a callback function to be called after the iterator is exhausted
+ * 
  */
-const runner = (gen, game, loop, cb) => {
+const runner = (gen, game) => {
   let it = gen(game);
 
   return Promise.resolve()
@@ -60,25 +57,24 @@ const runner = (gen, game, loop, cb) => {
       let next = it.next(val)
       return (function handleResult(next) {
         if(next.done) {
-          if(cb && typeof cb === 'function') {
-            cb();
-          }
           return next.value;
         }
         else {
           return Promise.resolve(next.value)
             .then(
               handleNext,
-              () => {
-                if(loop && !game.strict) {
-                  runner(gen, game, loop);
+              function handleErr(err) {
+                if (game.strict){
+                  return Promise.reject()
                 }
                 else {
-                  if(cb && typeof cb === 'function') {
-                    cb();
-                  }
+                  return Promise.resolve(
+                  runner(gen, game)
+                )
+                .then(handleResult);
                 }
-              })
+              }
+              )
         }
       })(next);
     })
@@ -135,8 +131,8 @@ function *playersInput(game) {
  * pusches random color onto list
  */
 const updateState = (game) => {
-  game.turn++;
-  game.list.push(colors[Math.floor(Math.random() * colors.lenght)]);
+  game.turn += 1;
+  game.list.push(colors[Math.floor(Math.random() * colors.length)]);
 };
 
 
@@ -154,25 +150,54 @@ function *displayColors(game) {
   }
 }
 
+const looseHandler = (game) => {
+  console.log("wrong");
+  if(game.strict) game.lost = true;
+};
 
-// const playTurn = (g) =>
-//   checkIfWin(playersMove(displayColors(updateState(g))));
 
-const logger = () => {console.log('ENDED')};
+const gameTurn = (game) => {
+  updateState(game);
+  return Promise.resolve()
+    .then(() => runner(displayColors, game))
+    .then(() => runner(playersInput, game))
+    .then(
+      undefined,
+      () => { looseHandler(game) }
+    )
+}
+
+function *playGame(game) {
+  let i = 0;
+  while (i < GAME_LENGTH && !game.lost) {
+    yield gameTurn(game);
+    i++;
+  }
+}
+
+
+/*=================================================================
+SETUP
+=================================================================*/
+STRICT_BTN.addEventListener('click', () => {
+  STRICT_BTN.classList.toggle('pressed')
+})
+
 
 START_BTN.addEventListener('click', () => {
-  let game = new Game(false);
+  let strict = STRICT_BTN.classList.contains('pressed');
+  let game = new Game(strict);
+  console.log(game);
 
-  game.list.push(RED, BLUE, GREEN, YELLOW);
-
-  
-  (function play(g) {
-    return new Promise((resolve, reject) => {
-      runner(displayColors, g, false, resolve)
-    })
+  runner(playGame, game)
     .then(
-      () => runner(playersInput, g, true)
+      () => {
+        if(game.lost){
+          console.log("You lost, sucker");
+        }
+        else {
+          console.log('WIN WIN WIN!!!');
+        }
+      }
     )
-    .then(()=>{console.log('Yupieeee')})
-  })(game);
 });
