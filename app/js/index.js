@@ -4,6 +4,7 @@ import '../scss/index.scss';
 import s1 from '../sounds/correct.mp3';
 import s2 from '../sounds/wrong.mp3';
 import s3 from '../sounds/killedkenny.mp3'
+import s4 from '../sounds/win.mp3';
 /*=================================================================
 CONSTANTS
 =================================================================*/
@@ -21,6 +22,7 @@ const colors = [RED, BLUE, GREEN, YELLOW];
 const successSound = new Audio(s1);
 const failSound = new Audio(s2);
 const killSound = new Audio(s3)
+const winSound = new Audio(s4);
 
 
 
@@ -198,6 +200,7 @@ START_BTN.addEventListener('click', () => {
             console.log("You lost, sucker");
           }
           else {
+            setTimeout( () => {winSound.play()}, 350);
             console.log('WIN WIN WIN!!!');
           }
         }
