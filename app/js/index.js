@@ -9,7 +9,6 @@ CONSTANTS
 =================================================================*/
 
 const GAME_LENGTH = 3;
-const SPEED = 1000;
 const DISPLAY_TIME = 500;
 const START_BTN = document.querySelector('.start-btn');
 const STRICT_BTN = document.querySelector('.strict-btn');
@@ -122,7 +121,7 @@ const waitForClick = (color, strict) => new Promise((resolve, reject) => {
  */
 function *playersInput(game) {
   for (const color of game.list) {
-    yield waitForClick(color);
+    yield waitForClick(color, game.strict);
   }
 }
 
@@ -182,22 +181,26 @@ SETUP
 STRICT_BTN.addEventListener('click', () => {
   STRICT_BTN.classList.toggle('pressed')
 })
-
+let gameIsRunning = false;
 
 START_BTN.addEventListener('click', () => {
-  let strict = STRICT_BTN.classList.contains('pressed');
-  let game = new Game(strict);
-  console.log(game);
+  if(!gameIsRunning){
+    gameIsRunning = true;
+    let strict = STRICT_BTN.classList.contains('pressed');
+    let game = new Game(strict);
+    console.log(game);
 
-  runner(playGame, game)
-    .then(
-      () => {
-        if(game.lost){
-          console.log("You lost, sucker");
+    runner(playGame, game)
+      .then(
+        () => {
+          gameIsRunning = false;
+          if(game.lost){
+            console.log("You lost, sucker");
+          }
+          else {
+            console.log('WIN WIN WIN!!!');
+          }
         }
-        else {
-          console.log('WIN WIN WIN!!!');
-        }
-      }
-    )
+      )
+    }
 });
