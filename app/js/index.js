@@ -13,7 +13,9 @@ const GAME_LENGTH = 3;
 const DISPLAY_TIME = 500;
 const START_BTN = document.querySelector('.start-btn');
 const STRICT_BTN = document.querySelector('.strict-btn');
+const RESET_BTN = document.querySelector('.reset-btn');
 const CIRCLE = document.querySelector('.circle');
+const COUNTER = document.querySelector('.counter');
 const RED = document.querySelector('.top-left');
 const BLUE = document.querySelector('.top-right');
 const GREEN = document.querySelector('.bot-left');
@@ -29,7 +31,13 @@ const winSound = new Audio(s4);
 /*=================================================================
 DATA DEFINITIONS
 =================================================================*/
-
+/**
+ * representes state of the game
+ * list is a sequence of randomly generated colors
+ * turn is a moves counter
+ * strict is a boolean indicating if the game is ran in strict mode
+ * lost is a boolean indicating if the player lost (strict mode only);
+ */
 class Game {
   constructor(strict) {
     this.list = [];
@@ -44,13 +52,15 @@ class Game {
 FUNCTIONS
 =================================================================*/
 
+//--------------------------------
+// UTILITIES
+
 /**
  * takes a promise-aware generator as a first param, calls it and 
  * exhausts the recieved iterator.
  * game param is for passing a game object
- * 
  */
-const runner = (gen, game) => {
+const runner = (gen, game, addon) => {
   let it = gen(game);
 
   return Promise.resolve()
@@ -70,7 +80,7 @@ const runner = (gen, game) => {
                 }
                 else {
                   return Promise.resolve(
-                  runner(gen, game)
+                    runner(gen, game)
                 )
                 .then(handleResult);
                 }
@@ -81,6 +91,9 @@ const runner = (gen, game) => {
     })
 }
 
+/**
+ * functions for displaying effects of correct and incorrect guess
+ */
 const signalFailure = (bool) => {
   if(bool) {
     killSound.play();
@@ -95,6 +108,50 @@ const signalSuccess = () => {
   successSound.currentTime = 0;
   successSound.play();
 }
+
+/**
+ * increments game turn by 1
+ * pusches random color onto list
+ */
+const updateState = (game) => {
+  game.turn += 1;
+  game.list.push(colors[Math.floor(Math.random() * colors.length)]);
+};
+
+/**
+ * returns a promise that is resolved after the color is done being highlighted
+ */
+const highlightColor = (color) => new Promise((resolve, reject) => {
+  color.classList.add('highlighted');
+  setTimeout(() => {
+      color.classList.remove('highlighted');
+      setTimeout(resolve, 300);
+    }, DISPLAY_TIME);
+});
+
+/**
+ * If game is ran in strict mode and a player fails to repeat the color
+ * sequence - sets game.lost to true and resets the moves counter
+ */
+const checkIfLost = (game) => {
+  if(game.strict) {
+    game.lost = true;
+    COUNTER.firstChild.textContent = 0;
+  }
+};
+
+/**
+ * updates moves counter
+ */
+const updateMovesCounter = (game) => {
+  COUNTER.firstChild.textContent = game.turn;
+}
+
+
+
+//--------------------------------
+// MAIN FUNCTIONALITIES
+
 
 /**
  * waits for a player to click the circle
@@ -128,43 +185,26 @@ function *playersInput(game) {
 }
 
 /**
- * increments game turn by 1
- * pusches random color onto list
+ * generator that yields all the colors accumulated in the game.list
+ * and waits for all of them to be properly displayed
  */
-const updateState = (game) => {
-  game.turn += 1;
-  game.list.push(colors[Math.floor(Math.random() * colors.length)]);
-};
-
-
-const highlightColor = (color) => new Promise((resolve, reject) => {
-  color.classList.add('highlighted');
-  setTimeout(() => {
-      color.classList.remove('highlighted');
-      resolve();
-    }, DISPLAY_TIME);
-});
-
 function *displayColors(game) {
   for (const color of game.list) {
     yield highlightColor(color);
   }
 }
 
-const looseHandler = (game) => {
-  console.log("wrong");
-  if(game.strict) game.lost = true;
-};
-
-
+/**
+ * 
+ */
 const gameTurn = (game) => {
   updateState(game);
   return Promise.resolve()
     .then(() => runner(displayColors, game))
-    .then(() => runner(playersInput, game))
+    .then(() => runner(playersInput, game, displayColors))
     .then(
-      undefined,
-      () => { looseHandler(game) }
+      () => { updateMovesCounter(game) },
+      () => { checkIfLost(game) }
     )
 }
 
@@ -180,12 +220,9 @@ function *playGame(game) {
 /*=================================================================
 SETUP
 =================================================================*/
-STRICT_BTN.addEventListener('click', () => {
-  STRICT_BTN.classList.toggle('pressed')
-})
 let gameIsRunning = false;
 
-START_BTN.addEventListener('click', () => {
+const initializeGame = () => {
   if(!gameIsRunning){
     gameIsRunning = true;
     let strict = STRICT_BTN.classList.contains('pressed');
@@ -206,4 +243,15 @@ START_BTN.addEventListener('click', () => {
         }
       )
     }
-});
+}
+
+STRICT_BTN.addEventListener('click', () => {
+  STRICT_BTN.classList.toggle('pressed')
+})
+
+START_BTN.addEventListener('click', initializeGame);
+
+RESET_BTN.addEventListener('click', () => {
+  window.location.reload();
+})
+
