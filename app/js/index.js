@@ -133,7 +133,7 @@ const highlightColor = (color) => new Promise((resolve, reject) => {
  * If game is ran in strict mode and a player fails to repeat the color
  * sequence - sets game.lost to true and resets the moves counter
  */
-const checkIfLost = (game) => {
+const handleLoose = (game) => {
   if(game.strict) {
     game.lost = true;
     COUNTER.firstChild.textContent = 0;
@@ -141,11 +141,23 @@ const checkIfLost = (game) => {
 };
 
 /**
+ * does all the fancy stuff if a player wins the game
+ */
+const handleWin = () => {
+  COUNTER.firstChild.textContent = 0;
+  setTimeout(() => {
+    winSound.play();
+  }, 400);
+}
+
+/**
  * updates moves counter
  */
 const updateMovesCounter = (game) => {
   COUNTER.firstChild.textContent = game.turn;
 }
+
+
 
 
 
@@ -191,6 +203,7 @@ function *displayColors(game) {
  * and waits for the user to click the proper button
  */
 function *playersInput(game) {
+  yield *displayColors(game);
   for (const color of game.list) {
     yield waitForClick(color, game.strict);
   }
@@ -200,12 +213,11 @@ function *playersInput(game) {
 
 const gameTurn = (game) => {
   updateState(game);
-  return Promise.resolve()
-    .then(() => runner(displayColors, game))
+  return Promise.resolve(updateMovesCounter(game))
     .then(() => runner(playersInput, game))
     .then(
-      () => { updateMovesCounter(game) },
-      () => { checkIfLost(game) }
+      undefined,
+      () => { handleLoose(game) }
     )
 }
 
@@ -238,7 +250,7 @@ const initializeGame = () => {
             console.log("You lost, sucker");
           }
           else {
-            setTimeout( () => {winSound.play()}, 350);
+            handleWin();
             console.log('WIN WIN WIN!!!');
           }
         }
