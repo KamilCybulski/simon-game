@@ -44,6 +44,7 @@ class Game {
     this.turn = 0;
     this.strict = strict;
     this.lost = false;
+    this.reset = false;
   };
 }
 
@@ -65,29 +66,34 @@ const runner = (gen, game) => {
 
   return Promise.resolve()
     .then(function handleNext(val) {
-      let next = it.next(val)
-      return (function handleResult(next) {
-        if(next.done) {
-          return next.value;
-        }
-        else {
-          return Promise.resolve(next.value)
-            .then(
-              handleNext,
-              function handleErr(err) {
-                if (game.strict){
-                  return Promise.reject()
+      if(!game.reset) {
+        let next = it.next(val)
+        return (function handleResult(next) {
+          if(next.done) {
+            return next.value;
+          }
+          else {
+            return Promise.resolve(next.value)
+              .then(
+                handleNext,
+                function handleErr(err) {
+                  if (game.strict){
+                    return Promise.reject()
+                  }
+                  else {
+                    return Promise.resolve(
+                      runner(gen, game)
+                  )
+                  .then(handleResult);
+                  }
                 }
-                else {
-                  return Promise.resolve(
-                    runner(gen, game)
                 )
-                .then(handleResult);
-                }
-              }
-              )
         }
       })(next);
+    }
+    else {
+      return Promise.reject();
+    }
     })
 }
 
@@ -238,20 +244,24 @@ let gameIsRunning = false;
 const initializeGame = () => {
   if(!gameIsRunning){
     gameIsRunning = true;
+
     let strict = STRICT_BTN.classList.contains('pressed');
     let game = new Game(strict);
-    console.log(game);
+
+    RESET_BTN.addEventListener('click', function resetGame() {
+      gameIsRunning = false;
+      game.reset = true;
+      COUNTER.firstChild.textContent = 0;
+      RESET_BTN.removeEventListener('click', resetGame);
+    });
+   
 
     runner(playGame, game)
       .then(
         () => {
           gameIsRunning = false;
-          if(game.lost){
-            console.log("You lost, sucker");
-          }
-          else {
+          if(!game.lost){
             handleWin();
-            console.log('WIN WIN WIN!!!');
           }
         }
       )
@@ -264,7 +274,5 @@ STRICT_BTN.addEventListener('click', () => {
 
 START_BTN.addEventListener('click', initializeGame);
 
-RESET_BTN.addEventListener('click', () => {
-  window.location.reload();
-})
+
 
