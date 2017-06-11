@@ -60,7 +60,7 @@ FUNCTIONS
  * exhausts the recieved iterator.
  * game param is for passing a game object
  */
-const runner = (gen, game, addon) => {
+const runner = (gen, game) => {
   let it = gen(game);
 
   return Promise.resolve()
@@ -174,15 +174,6 @@ const waitForClick = (color, strict) => new Promise((resolve, reject) => {
   });
 });
 
-/**
- * generator that yields all the colors accumulated in the game.list
- * and waits for the user to click the proper button
- */
-function *playersInput(game) {
-  for (const color of game.list) {
-    yield waitForClick(color, game.strict);
-  }
-}
 
 /**
  * generator that yields all the colors accumulated in the game.list
@@ -194,14 +185,24 @@ function *displayColors(game) {
   }
 }
 
+
 /**
- * 
+ * generator that yields all the colors accumulated in the game.list
+ * and waits for the user to click the proper button
  */
+function *playersInput(game) {
+  for (const color of game.list) {
+    yield waitForClick(color, game.strict);
+  }
+}
+
+
+
 const gameTurn = (game) => {
   updateState(game);
   return Promise.resolve()
     .then(() => runner(displayColors, game))
-    .then(() => runner(playersInput, game, displayColors))
+    .then(() => runner(playersInput, game))
     .then(
       () => { updateMovesCounter(game) },
       () => { checkIfLost(game) }
