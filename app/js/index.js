@@ -9,8 +9,9 @@ import s4 from '../sounds/win.mp3';
 CONSTANTS
 =================================================================*/
 
-const GAME_LENGTH = 3;
-const DISPLAY_TIME = 500;
+const GAME_LENGTH = 4;
+const DISPLAY_TIME = 300;
+const DISPLAY_TIMEOUT = 200;
 const START_BTN = document.querySelector('.start-btn');
 const STRICT_BTN = document.querySelector('.strict-btn');
 const RESET_BTN = document.querySelector('.reset-btn');
@@ -45,6 +46,7 @@ class Game {
     this.strict = strict;
     this.lost = false;
     this.reset = false;
+    this.repeat = false;
   };
 }
 
@@ -60,16 +62,21 @@ FUNCTIONS
  * takes a promise-aware generator as a first param, calls it and 
  * exhausts the recieved iterator.
  * game param is for passing a game object
+ * 
+ * this function is taken from YDKJS Async & Performance book
+ * courtesy of Kyle Simpson
+ * https://github.com/getify/You-Dont-Know-JS/blob/master/async%20%26%20
+ * performance/ch4.md
  */
-const runner = (gen, game) => {
-  let it = gen(game);
+const run = (gen, ...args) => {
+  let it = gen(...args);
 
   return Promise.resolve()
-    .then(function handleNext(val) {
-      if(!game.reset) {
-        let next = it.next(val)
+    .then(
+      function handleNext(val) {
+        let next = it.next(val);
         return (function handleResult(next) {
-          if(next.done) {
+          if (next.done) {
             return next.value;
           }
           else {
@@ -77,32 +84,23 @@ const runner = (gen, game) => {
               .then(
                 handleNext,
                 function handleErr(err) {
-                  if (game.strict){
-                    return Promise.reject()
-                  }
-                  else {
-                    return Promise.resolve(
-                      runner(gen, game)
-                  )
-                  .then(handleResult);
-                  }
+                  return Promise.resolve(
+                    it.throw(err)
+                  ).then(handleResult)
                 }
-                )
-        }
-      })(next);
-    }
-    else {
-      return Promise.reject();
-    }
-    })
-}
+              );
+          }
+        })(next);
+    });
+};
 
 /**
- * functions for displaying effects of correct and incorrect guess
+ * function for signaling if the player guessed color correctly or not
  */
-const signalFailure = (bool) => {
+const signal = (bool) => {
   if(bool) {
-    killSound.play();
+    successSound.currentTime = 0;
+    successSound.play();
   }
   else {
     failSound.currentTime = 0;
@@ -110,169 +108,135 @@ const signalFailure = (bool) => {
   }
 };
 
-const signalSuccess = () => {
-  successSound.currentTime = 0;
-  successSound.play();
-}
-
-/**
- * increments game turn by 1
- * pusches random color onto list
- */
-const updateState = (game) => {
-  game.turn += 1;
-  game.list.push(colors[Math.floor(Math.random() * colors.length)]);
+const resetMovesCounter = () => {
+  COUNTER.firstChild.textContent = '0';
 };
 
-/**
- * If game is ran in strict mode and a player fails to repeat the color
- * sequence - sets game.lost to true and resets the moves counter
- */
-const handleLoose = (game) => {
-  if(game.strict) {
-    game.lost = true;
-    COUNTER.firstChild.textContent = 0;
+const updateState = (game) => {
+  game.turn++;
+  game.list.push(colors[Math.floor(Math.random() * colors.length)]);
+  COUNTER.firstChild.textContent = game.turn;
+};
+
+
+const handleFinish = (game) => {
+  if(!game.reset) {
+    setTimeout(() => {
+      resetMovesCounter();
+      if(game.lost) {
+        killSound.play();
+      }
+      else {
+        winSound.play();
+      }
+    }, 500)
   }
 };
 
-/**
- * does all the fancy stuff if a player wins the game
- */
-const handleWin = () => {
-  COUNTER.firstChild.textContent = 0;
-  setTimeout(() => {
-    winSound.play();
-  }, 400);
-}
-
-/**
- * updates moves counter
- */
-const updateMovesCounter = (game) => {
-  COUNTER.firstChild.textContent = game.turn;
-}
-
-
-
-
 
 //--------------------------------
-// MAIN FUNCTIONALITIES
+// CORE FUNCTIONS
 
+
+/**
+ * returns a promise that is resolved DISPLAY_TIME miliseconds after 
+ * color got highlighted
+ */
+const highlightColor = (color) => new Promise(resolve => {
+  color.classList.add('highlighted');
+  setTimeout(resolve, DISPLAY_TIME);
+});
+
+/**
+ * returns a promise that is resolved DISPLAY_TIMEOUT miliseconds after 
+ * color got unhighlighted
+ */
+const unHighlighColor = (color) => new Promise(resolve => {
+  color.classList.remove('highlighted');
+  setTimeout(resolve, DISPLAY_TIMEOUT);
+});
 
 /**
  * waits for a player to click the circle
  * resolves a promise if a player clicks correct part of the circle
  * rejects a promise if players clicks any other part of the circle
  * color is one of the colors
- * strict is a boolean, indicating if game is ran is strict mode
  */
-const waitForClick = (color, strict) => new Promise((resolve, reject) => {
+const waitForClick = (color, game) => new Promise((resolve, reject) => {
   CIRCLE.addEventListener('click', function circleClickHandler(e) {
     if(e.target === color) {
-      signalSuccess();
+      if(!game.reset) signal(true);
       resolve();
     }
     else {
-      signalFailure(strict);
+      if(!game.reset) signal(false);
       reject();
     }
     CIRCLE.removeEventListener('click', circleClickHandler);
   });
 });
 
-/**
- * returns a promise that is resolved after the color is done being highlighted
- */
-const highlightColor = (color) => new Promise((resolve, reject) => {
-  color.classList.add('highlighted');
-  setTimeout(() => {
-      color.classList.remove('highlighted');
-      setTimeout(resolve, 300);
-    }, DISPLAY_TIME);
-});
 
+//--------------------------------
+// GENERATORS
 
-/**
- * generator that yields all the colors accumulated in the game.list
- * and waits for all of them to be properly displayed
- */
 function *displayColors(game) {
   for (const color of game.list) {
-    yield highlightColor(color);
+    if(!game.reset) {
+      yield highlightColor(color);
+      yield unHighlighColor(color);
+    }
   }
 }
 
-
-/**
- * generator that yields all the colors accumulated in the game.list
- * and waits for the user to click the proper button
- */
 function *playersInput(game) {
-  yield *displayColors(game);
-  for (const color of game.list) {
-    yield waitForClick(color, game.strict);
+  if(!game.reset) {
+    for (const color of game.list) {
+      yield waitForClick(color, game);
+    }
   }
 }
 
-
-
-const gameTurn = (game) => {
-  updateState(game);
-  return Promise.resolve(updateMovesCounter(game))
-    .then(() => runner(playersInput, game))
-    .then(
-      undefined,
-      () => { handleLoose(game) }
-    )
+function *inputPhase(game) {
+  yield * displayColors(game);
+  try { 
+    yield * playersInput(game); 
+  }
+  catch(err) {
+    if(game.strict) {
+      game.lost = true;
+      return Promise.reject();
+    }
+    else {
+      yield * inputPhase(game);
+    }
+  }
 }
 
 function *playGame(game) {
-  let i = 0;
-  while (i < GAME_LENGTH && !game.lost) {
-    yield gameTurn(game);
-    i++;
-  }
-}
-
-
-/*=================================================================
-SETUP
-=================================================================*/
-let gameIsRunning = false;
-
-const initializeGame = () => {
-  if(!gameIsRunning){
-    gameIsRunning = true;
-
-    let strict = STRICT_BTN.classList.contains('pressed');
-    let game = new Game(strict);
-
-    RESET_BTN.addEventListener('click', function resetGame() {
-      gameIsRunning = false;
-      game.reset = true;
-      COUNTER.firstChild.textContent = 0;
-      RESET_BTN.removeEventListener('click', resetGame);
-    });
-   
-
-    runner(playGame, game)
-      .then(
-        () => {
-          gameIsRunning = false;
-          if(!game.lost){
-            handleWin();
-          }
-        }
-      )
+    let i = 0;
+    while (i++ < GAME_LENGTH && !game.lost) {
+      updateState(game);
+      yield * inputPhase(game);
     }
+    return game;
 }
 
 STRICT_BTN.addEventListener('click', () => {
-  STRICT_BTN.classList.toggle('pressed')
+  STRICT_BTN.classList.toggle('pressed');
 })
 
-START_BTN.addEventListener('click', initializeGame);
+START_BTN.addEventListener('click', () => {
+  const strict = STRICT_BTN.classList.contains('pressed')
+  const game = new Game(strict);
+
+  RESET_BTN.addEventListener('click', () => {
+    resetMovesCounter();
+    game.reset = true;
+  })
 
 
+  run(playGame, game)
+    .then(handleFinish);
+})
 
