@@ -1,8 +1,26 @@
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.gameboy {
+  width: 550px;
+  height: 310px;
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: space-around;
+  align-items: center;
+  border-radius: 5px;
+  box-sizing: border-box;
+  background-color: lightgrey;
+}
+
 .container {
-  border: 6px solid black;
   width: 300px;
   height: 300px;
-  margin: 50px auto;
+  margin: 10px;
   border-radius: 50%;
 }
 
@@ -15,12 +33,10 @@
 }
 
 .controls {
-  border: 6px solid black;
-  width: 300px;
-  height: 100px;
+  width: 200px;
+  height: 300px;
   display: flex;
+  flex-flow: row wrap;
   justify-content: space-around;
   align-items: center;
-  margin: 30px auto;
-  border-radius: 5px;
 }

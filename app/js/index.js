@@ -125,17 +125,6 @@ const updateState = (game) => {
 };
 
 /**
- * returns a promise that is resolved after the color is done being highlighted
- */
-const highlightColor = (color) => new Promise((resolve, reject) => {
-  color.classList.add('highlighted');
-  setTimeout(() => {
-      color.classList.remove('highlighted');
-      setTimeout(resolve, 300);
-    }, DISPLAY_TIME);
-});
-
-/**
  * If game is ran in strict mode and a player fails to repeat the color
  * sequence - sets game.lost to true and resets the moves counter
  */
@@ -190,6 +179,17 @@ const waitForClick = (color, strict) => new Promise((resolve, reject) => {
     }
     CIRCLE.removeEventListener('click', circleClickHandler);
   });
+});
+
+/**
+ * returns a promise that is resolved after the color is done being highlighted
+ */
+const highlightColor = (color) => new Promise((resolve, reject) => {
+  color.classList.add('highlighted');
+  setTimeout(() => {
+      color.classList.remove('highlighted');
+      setTimeout(resolve, 300);
+    }, DISPLAY_TIME);
 });
 
 
