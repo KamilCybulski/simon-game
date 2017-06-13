@@ -108,17 +108,16 @@ const signal = (bool) => {
   }
 };
 
+/**
+ * resets moves counter on the screen
+ */
 const resetMovesCounter = () => {
   COUNTER.firstChild.textContent = '0';
 };
 
-const updateState = (game) => {
-  game.turn++;
-  game.list.push(colors[Math.floor(Math.random() * colors.length)]);
-  COUNTER.firstChild.textContent = game.turn;
-};
-
-
+/**
+ * All the fancy stuff that happens when the game finishes
+ */
 const handleFinish = (game) => {
   if(!game.reset) {
     setTimeout(() => {
@@ -164,17 +163,31 @@ const unHighlighColor = (color) => new Promise(resolve => {
  */
 const waitForClick = (color, game) => new Promise((resolve, reject) => {
   CIRCLE.addEventListener('click', function circleClickHandler(e) {
+
     if(e.target === color) {
       if(!game.reset) signal(true);
       resolve();
+      CIRCLE.removeEventListener('click', circleClickHandler);
     }
-    else {
+    else if(colors.includes(e.target) && e.target !== color) {
       if(!game.reset) signal(false);
       reject();
+      CIRCLE.removeEventListener('click', circleClickHandler);
     }
-    CIRCLE.removeEventListener('click', circleClickHandler);
   });
 });
+
+/**
+ * updates state of the game: increments turn by one and adds random color
+ * to the list 
+ */
+const updateState = (game) => {
+  if (!game.reset) {
+    game.turn++;
+    game.list.push(colors[Math.floor(Math.random() * colors.length)]);
+    COUNTER.firstChild.textContent = game.turn;
+  }
+};
 
 
 //--------------------------------
@@ -222,21 +235,30 @@ function *playGame(game) {
     return game;
 }
 
+//--------------------------------
+// SETUP
+
+let gameIsRunning = false;
+
 STRICT_BTN.addEventListener('click', () => {
   STRICT_BTN.classList.toggle('pressed');
 })
 
 START_BTN.addEventListener('click', () => {
-  const strict = STRICT_BTN.classList.contains('pressed')
-  const game = new Game(strict);
+  if (!gameIsRunning) {
+    const strict = STRICT_BTN.classList.contains('pressed')
+    const game = new Game(strict);
+    gameIsRunning = true;
 
-  RESET_BTN.addEventListener('click', () => {
-    resetMovesCounter();
-    game.reset = true;
-  })
+    RESET_BTN.addEventListener('click', () => {
+      resetMovesCounter();
+      game.reset = true;
+    })
 
 
-  run(playGame, game)
-    .then(handleFinish);
+    run(playGame, game)
+      .then(handleFinish)
+      .then(() => { gameIsRunning = false; });
+    }
 })
 
