@@ -253,6 +253,7 @@ START_BTN.addEventListener('click', () => {
     RESET_BTN.addEventListener('click', () => {
       resetMovesCounter();
       game.reset = true;
+      gameIsRunning = false;
     })
 
 
