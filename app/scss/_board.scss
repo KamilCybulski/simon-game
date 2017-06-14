@@ -2,26 +2,36 @@
   width: 50%;
   height: 50%;
   transition: opacity linear .2s;
+  box-sizing: border-box;
+  border: 10px solid #212121;
 }
 
 .top-left {
   background-color: #b71c1c;
   border-radius: 100% 0 0 0;
+  border-top: 15px solid #212121;
+  border-left: 15px solid #212121;
 }
 
 .top-right {
   background-color: #1565c0;
   border-radius: 0 100% 0 0;
+  border-top: 15px solid #212121;
+  border-right: 15px solid #212121;
 }
 
 .bot-left {
   background-color: #388e3c;
   border-radius: 0 0 0 100%;
+  border-bottom: 15px solid #212121;
+  border-left: 15px solid #212121;
 }
 
 .bot-right {
   background-color: #fbc02d;
   border-radius: 0 0 100% 0;
+  border-bottom: 15px solid #212121;
+  border-right: 15px solid #212121;
 }
 
 .highlighted {
