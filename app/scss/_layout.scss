@@ -35,3 +35,16 @@
   justify-content: space-around;
   align-items: center;
 }
+
+.github {
+  margin: 30px auto;
+  text-align: center;
+  a {
+    text-decoration: none;
+    cursor: pointer;
+    font-size: 13px;
+    color: #000;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+}
