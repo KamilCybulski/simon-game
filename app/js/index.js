@@ -39,17 +39,38 @@ DATA DEFINITIONS
  * strict is a boolean indicating if the game is ran in strict mode
  * lost is a boolean indicating if the player lost (strict mode only);
  */
-class Game {
-  constructor(strict) {
-    this.list = [];
-    this.turn = 0;
-    this.strict = strict;
-    this.lost = false;
-    this.reset = false;
-    this.repeat = false;
-  };
-}
-
+const newGame = (strict) => Object.create(null, {
+  list: {
+    writable: true,
+    enumerable: true,
+    configurable: true,
+    value: []
+  },
+  turn: {
+    writable: true,
+    enumerable: true,
+    configurable: true,
+    value: 0
+  },
+  strict: {
+    writable: true,
+    enumerable: true,
+    configurable: true,
+    value: strict
+  },
+  lost: {
+    writable: true,
+    enumerable: true,
+    configurable: true,
+    value: false
+  },
+  reset: {
+    writable: true,
+    enumerable: true,
+    configurable: true,
+    value: false
+  }
+});
 
 /*=================================================================
 FUNCTIONS
@@ -73,24 +94,24 @@ const run = (gen, ...args) => {
 
   return Promise.resolve()
     .then(
-      function handleNext(val) {
-        let next = it.next(val);
-        return (function handleResult(next) {
-          if (next.done) {
-            return next.value;
-          }
-          else {
-            return Promise.resolve(next.value)
-              .then(
-                handleNext,
-                function handleErr(err) {
-                  return Promise.resolve(
-                    it.throw(err)
-                  ).then(handleResult)
-                }
-              );
-          }
-        })(next);
+    function handleNext(val) {
+      let next = it.next(val);
+      return (function handleResult(next) {
+        if (next.done) {
+          return next.value;
+        }
+        else {
+          return Promise.resolve(next.value)
+            .then(
+            handleNext,
+            function handleErr(err) {
+              return Promise.resolve(
+                it.throw(err)
+              ).then(handleResult)
+            }
+            );
+        }
+      })(next);
     });
 };
 
@@ -98,7 +119,7 @@ const run = (gen, ...args) => {
  * function for signaling if the player guessed color correctly or not
  */
 const signal = (bool) => {
-  if(bool) {
+  if (bool) {
     successSound.currentTime = 0;
     successSound.play();
   }
@@ -119,10 +140,10 @@ const resetMovesCounter = () => {
  * All the fancy stuff that happens when the game finishes
  */
 const handleFinish = (game) => {
-  if(!game.reset) {
+  if (!game.reset) {
     setTimeout(() => {
       resetMovesCounter();
-      if(game.lost) {
+      if (game.lost) {
         killSound.play();
       }
       else {
@@ -164,13 +185,13 @@ const unHighlighColor = (color) => new Promise(resolve => {
 const waitForClick = (color, game) => new Promise((resolve, reject) => {
   CIRCLE.addEventListener('click', function circleClickHandler(e) {
 
-    if(e.target === color) {
-      if(!game.reset) signal(true);
+    if (e.target === color) {
+      if (!game.reset) signal(true);
       resolve();
       CIRCLE.removeEventListener('click', circleClickHandler);
     }
-    else if(colors.includes(e.target) && e.target !== color) {
-      if(!game.reset) signal(false);
+    else if (colors.includes(e.target) && e.target !== color) {
+      if (!game.reset) signal(false);
       reject();
       CIRCLE.removeEventListener('click', circleClickHandler);
     }
@@ -193,46 +214,46 @@ const updateState = (game) => {
 //--------------------------------
 // GENERATORS
 
-function *displayColors(game) {
+function* displayColors(game) {
   for (const color of game.list) {
-    if(!game.reset) {
+    if (!game.reset) {
       yield highlightColor(color);
       yield unHighlighColor(color);
     }
   }
 }
 
-function *playersInput(game) {
-  if(!game.reset) {
+function* playersInput(game) {
+  if (!game.reset) {
     for (const color of game.list) {
       yield waitForClick(color, game);
     }
   }
 }
 
-function *inputPhase(game) {
-  yield * displayColors(game);
-  try { 
-    yield * playersInput(game); 
+function* inputPhase(game) {
+  yield* displayColors(game);
+  try {
+    yield* playersInput(game);
   }
-  catch(err) {
-    if(game.strict) {
+  catch (err) {
+    if (game.strict) {
       game.lost = true;
       return Promise.reject();
     }
     else {
-      yield * inputPhase(game);
+      yield* inputPhase(game);
     }
   }
 }
 
-function *playGame(game) {
-    let i = 0;
-    while (i++ < GAME_LENGTH && !game.lost) {
-      updateState(game);
-      yield * inputPhase(game);
-    }
-    return game;
+function* playGame(game) {
+  let i = 0;
+  while (i++ < GAME_LENGTH && !game.lost) {
+    updateState(game);
+    yield* inputPhase(game);
+  }
+  return game;
 }
 
 //--------------------------------
@@ -247,7 +268,7 @@ STRICT_BTN.addEventListener('click', () => {
 START_BTN.addEventListener('click', () => {
   if (!gameIsRunning) {
     const strict = STRICT_BTN.classList.contains('pressed')
-    const game = new Game(strict);
+    const game = newGame(strict);
     gameIsRunning = true;
 
     RESET_BTN.addEventListener('click', () => {
@@ -260,6 +281,6 @@ START_BTN.addEventListener('click', () => {
     run(playGame, game)
       .then(handleFinish)
       .then(() => { gameIsRunning = false; });
-    }
+  }
 })
 
