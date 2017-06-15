@@ -10,8 +10,8 @@ CONSTANTS
 =================================================================*/
 
 const GAME_LENGTH = 4;
-const DISPLAY_TIME = 300;
-const DISPLAY_TIMEOUT = 200;
+const DISPLAY_TIME = 500;
+const DISPLAY_TIMEOUT = 400;
 const START_BTN = document.querySelector('.start-btn');
 const STRICT_BTN = document.querySelector('.strict-btn');
 const RESET_BTN = document.querySelector('.reset-btn');
@@ -270,17 +270,23 @@ START_BTN.addEventListener('click', () => {
     const strict = STRICT_BTN.classList.contains('pressed')
     const game = newGame(strict);
     gameIsRunning = true;
+    START_BTN.classList.add('pressed');
 
     RESET_BTN.addEventListener('click', () => {
       resetMovesCounter();
       game.reset = true;
       gameIsRunning = false;
+      START_BTN.classList.remove('pressed');
     })
 
 
     run(playGame, game)
       .then(handleFinish)
-      .then(() => { gameIsRunning = false; });
+      .then(
+        () => { 
+          gameIsRunning = false;
+          START_BTN.classList.remove('pressed'); 
+        });
   }
 })
 

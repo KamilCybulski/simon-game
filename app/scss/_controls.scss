@@ -1,30 +1,38 @@
 .counter {
-  width: 40px;
-  height: 40px;
+  width: 80px;
+  height: 60px;
   display: flex;
   justify-content: center;
   align-items: center;
   font-size: 30px;
   font-weight: 900;
+  border-radius: 5px;
+  border: 2px solid #212121;
+  background-color: #000;
+  color: #64dd17;
+  margin: 0 10px;
 }
 
 .btn {
-  width: 85px;
-  height: 30px;
-  border: 3px solid black;
-  border-radius: 30px;
+  width: 80px;
+  height: 60px;
+  border: 2px solid #212121;
+  border-radius: 3px;
+  margin: 0 10px;
   display: flex;
   justify-content: center;
   align-items: center;
   font-weight: 700;
   font-size: 20px;
-  &:hover {
-    background-color: black;
-    color: #fff;
+  cursor: pointer;
+  background-color: #00b0ff;
+  &:active {
+    background-color: #80d8ff;
+    box-shadow: inset 1px 1px 2px 1px rgba(0,0,0, .5);
   }
 }
 
 .pressed {
-  background-color: black;
-  color: #fff;
+  background-color: #80d8ff;
+  box-shadow: inset 1px 1px 2px 1px rgba(0,0,0, .5);
 }

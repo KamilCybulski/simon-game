@@ -1,9 +1,13 @@
 .field {
   width: 50%;
   height: 50%;
-  transition: opacity linear .2s;
+  transition: background linear .3s;
   box-sizing: border-box;
   border: 10px solid #212121;
+  cursor: pointer;
+  &:active {
+    box-shadow: inset 3px 3px 5px 5px rgba(0,0,0, .7);
+  }
 }
 
 .top-left {
@@ -35,5 +39,5 @@
 }
 
 .highlighted {
-  background-color: black;
+  background-color: #fff;
 }
